@@ -30,10 +30,14 @@ import org.altbeacon.beacon.client.BeaconDataFactory;
 import org.altbeacon.beacon.client.NullBeaconDataFactory;
 import org.altbeacon.beacon.distance.DistanceCalculator;
 import org.altbeacon.beacon.logging.LogManager;
+import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The <code>Beacon</code> class represents a single hardware Beacon detected by
@@ -378,17 +382,22 @@ public class Beacon implements Parcelable {
      */
     public double getDistance() {
         if (mDistance == null) {
-            double bestRssiAvailable = mRssi;
-            if (mRunningAverageRssi != null) {
-                bestRssiAvailable = mRunningAverageRssi;
-            }
-            else {
-                LogManager.d(TAG, "Not using running average RSSI because it is null");
-            }
-            mDistance = calculateDistance(mTxPower, bestRssiAvailable);
+            mDistance = calculateDistance(mTxPower, getBestRssiAvailable());
         }
         return mDistance;
     }
+
+    public double getBestRssiAvailable() {
+        double bestRssiAvailable = mRssi;
+        if (mRunningAverageRssi != null) {
+            bestRssiAvailable = mRunningAverageRssi;
+        }
+        else {
+            LogManager.d(TAG, "Not using running average RSSI because it is null");
+        }
+        return bestRssiAvailable;
+    }
+
     /**
      * @see #mRssi
      * @return mRssi
@@ -527,6 +536,46 @@ public class Beacon implements Parcelable {
         out.writeInt(mManufacturer);
         out.writeString(mBluetoothName);
 
+    }
+
+    /**
+     * JSONify beacon
+     */
+    public JSONObject toJSON() {
+        HashMap<String, Object> map = new HashMap<>();
+
+        ArrayList<String> identifiers = new ArrayList<>();
+        for (Identifier identifier: mIdentifiers) {
+            identifiers.add(identifier.toString());
+        }
+        map.put("identifiers", identifiers);
+
+        map.put("distance", getDistance());
+        map.put("rssi", getRssi());
+        map.put("best_rssi", getBestRssiAvailable());
+        LogManager.w(TAG,
+                "beacon saved with rssi : %d and best rssi: %f", getRssi(), getBestRssiAvailable());
+        map.put("tx_power", mTxPower);
+        map.put("bluetooth_address", mBluetoothAddress);
+        map.put("bluetooth_type_code", mBeaconTypeCode);
+        map.put("service_uuid", mServiceUuid);
+
+        ArrayList<Long> dataFields = new ArrayList<>();
+        for (Long dataField: mDataFields) {
+            dataFields.add(dataField);
+        }
+        map.put("data_fields", dataFields);
+
+        ArrayList<Long> extraDataFields = new ArrayList<>();
+        for (Long dataField: mExtraDataFields) {
+            extraDataFields.add(dataField);
+        }
+        map.put("extra_data_fields", extraDataFields);
+
+        map.put("manufacturer", mManufacturer);
+        map.put("bluetooth_name", mBluetoothName);
+
+        return new JSONObject(map);
     }
 
     /**

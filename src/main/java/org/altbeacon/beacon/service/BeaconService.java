@@ -44,6 +44,7 @@ import org.altbeacon.beacon.BuildConfig;
 import org.altbeacon.beacon.Region;
 import org.altbeacon.beacon.distance.DistanceCalculator;
 import org.altbeacon.beacon.distance.ModelSpecificDistanceCalculator;
+import org.altbeacon.beacon.logging.JSONDataLogger;
 import org.altbeacon.beacon.logging.LogManager;
 import org.altbeacon.beacon.service.scanner.CycledLeScanCallback;
 import org.altbeacon.beacon.service.scanner.CycledLeScanner;
@@ -53,7 +54,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -352,7 +352,11 @@ public class BeaconService extends Service {
                 Region region = regionIterator.next();
                 RangeState rangeState = rangedRegionState.get(region);
                 LogManager.d(TAG, "Calling ranging callback");
-                rangeState.getCallback().call(BeaconService.this, "rangingData", new RangingData(rangeState.finalizeBeacons(), region));
+                Collection<Beacon> finalizedBeacons = rangeState.finalizeBeacons();
+                rangeState.getCallback().call(BeaconService.this, "rangingData", new RangingData(finalizedBeacons, region));
+                for (Beacon beacon : finalizedBeacons) {
+                    JSONDataLogger.getInstance().log(beacon, "ProcessRangeData");
+                }
             }
         }
     }
@@ -375,6 +379,7 @@ public class BeaconService extends Service {
         if (Stats.getInstance().isEnabled()) {
             Stats.getInstance().log(beacon);
         }
+        JSONDataLogger.getInstance().log(beacon, "ProcessBeaconFromScan");
         trackedBeaconsPacketCount++;
         if (LogManager.isVerboseLoggingEnabled()) {
             LogManager.d(TAG,

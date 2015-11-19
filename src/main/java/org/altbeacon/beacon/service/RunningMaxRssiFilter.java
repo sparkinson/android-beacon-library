@@ -39,7 +39,9 @@ public class RunningMaxRssiFilter implements RssiFilter {
         refreshMeasurements();
         if (mMeasurements.size() == 0) return -1;
         LogManager.i(TAG, "Running max mRssi: %s", mMeasurements.get(mMeasurements.size()-1).rssi);
-        return (double) mMeasurements.get(mMeasurements.size()-1).rssi;
+        int size = mMeasurements.size();
+        if (size > 1) return (mMeasurements.get(size-1).rssi + mMeasurements.get(size-2).rssi)/2;
+        else return (double) mMeasurements.get(mMeasurements.size()-1).rssi;
     }
 
     private synchronized void refreshMeasurements() {

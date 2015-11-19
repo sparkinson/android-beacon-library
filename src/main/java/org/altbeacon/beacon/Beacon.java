@@ -98,6 +98,7 @@ public class Beacon implements Parcelable {
      * fluctuates quite a bit with RSSI, so despite the name, it is not super accurate.
      */
     protected Double mDistance;
+
     /**
      * The measured signal strength of the Bluetooth packet that led do this Beacon detection.
      */
@@ -118,6 +119,11 @@ public class Beacon implements Parcelable {
      * If multiple RSSI samples were available, this is the running average
      */
     private Double mRunningAverageRssi = null;
+
+    /**
+     * If multiple RSSI samples were available, this is the running average
+     */
+    private Double mRunningMaxRssi = null;
 
     /**
      * Used to attach data to individual Beacons, either locally or in the cloud
@@ -240,6 +246,7 @@ public class Beacon implements Parcelable {
         mExtraDataFields = new ArrayList<>(otherBeacon.mExtraDataFields);
         this.mDistance = otherBeacon.mDistance;
         this.mRunningAverageRssi = otherBeacon.mRunningAverageRssi;
+        this.mRunningMaxRssi = otherBeacon.mRunningMaxRssi;
         this.mRssi = otherBeacon.mRssi;
         this.mTxPower = otherBeacon.mTxPower;
         this.mBluetoothAddress = otherBeacon.mBluetoothAddress;
@@ -261,8 +268,17 @@ public class Beacon implements Parcelable {
      * Sets the running average rssi for use in distance calculations
      * @param rssi the running average rssi
      */
-    public void setRunningAverageRssi(double rssi) {
+    public void setRunningAverageRssi(Double rssi) {
         mRunningAverageRssi = rssi;
+        mDistance = null; // force calculation of accuracy and proximity next time they are requested
+    }
+
+    /**
+     * Sets the running max rssi for use in distance calculations
+     * @param rssi the running max rssi
+     */
+    public void setRunningMaxRssi(Double rssi) {
+        mRunningMaxRssi = rssi;
         mDistance = null; // force calculation of accuracy and proximity next time they are requested
     }
 
@@ -382,12 +398,17 @@ public class Beacon implements Parcelable {
      */
     public double getDistance() {
         if (mDistance == null) {
-            mDistance = calculateDistance(mTxPower, getBestRssiAvailable());
+            mDistance = calculateDistance(mTxPower, getBestAverageRssiAvailable());
+            if (mRunningMaxRssi != null) {
+                // we set the current rssi to be the short term max minus a longer term mean
+                // we are looking for short term changes
+                mDistance = calculateDistance(mTxPower, mRunningMaxRssi) - mDistance;
+            }
         }
         return mDistance;
     }
 
-    public double getBestRssiAvailable() {
+    public double getBestAverageRssiAvailable() {
         double bestRssiAvailable = mRssi;
         if (mRunningAverageRssi != null) {
             bestRssiAvailable = mRunningAverageRssi;
@@ -552,9 +573,11 @@ public class Beacon implements Parcelable {
 
         map.put("distance", getDistance());
         map.put("rssi", getRssi());
-        map.put("best_rssi", getBestRssiAvailable());
-        LogManager.w(TAG,
-                "beacon saved with rssi : %d and best rssi: %f", getRssi(), getBestRssiAvailable());
+        map.put("best_rssi", getBestAverageRssiAvailable());
+        if (mRunningMaxRssi != null)
+            map.put("max_rssi", mRunningMaxRssi);
+        LogManager.d(TAG,
+                "beacon saved with rssi : %d and best rssi: %f", getRssi(), getBestAverageRssiAvailable());
         map.put("tx_power", mTxPower);
         map.put("bluetooth_address", mBluetoothAddress);
         map.put("bluetooth_type_code", mBeaconTypeCode);

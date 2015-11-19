@@ -82,7 +82,7 @@ public class RangeState {
                     newRangedBeacons.put(beacon, rangedBeacon);
                 }
                 else {
-                    LogManager.d(TAG, "Dumping beacon from RangeState because it has no recent measurements.");
+                    LogManager.i(TAG, "Dumping beacon from RangeState because it has no recent measurements.");
                 }
             }
             mRangedBeacons = newRangedBeacons;

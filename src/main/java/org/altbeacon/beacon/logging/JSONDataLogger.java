@@ -47,9 +47,14 @@ public class JSONDataLogger {
         getInstance().mRange = range;
     }
 
+    public static int getRange() {
+        return getInstance().mRange;
+    }
+
     public static JSONDataLogger getInstance() {
         if(mInstance == null) {
             mInstance = new JSONDataLogger();
+            mInstance.setRange(0);
         }
         return mInstance;
     }

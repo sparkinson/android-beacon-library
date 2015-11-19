@@ -12,17 +12,11 @@ import java.util.Iterator;
  * The list is clipped by a certain length at start and end and the average
  * is calculate by simple arithmetic average
  */
-public class RunningAverageRssiFilter implements RssiFilter {
+public class RunningMaxRssiFilter implements RssiFilter {
 
     private static final String TAG = "RunningAverageRssiFilter";
-    public static final long DEFAULT_MAX_TRACKING_AGE = 5000; /* 5 Seconds */
-    public static long maxTrackingAge = DEFAULT_MAX_TRACKING_AGE; /* 5 Seconds */
-    public static final long DEFAULT_SAMPLE_EXPIRATION_MILLISECONDS = 20000; /* 20 seconds */
+    public static final long DEFAULT_SAMPLE_EXPIRATION_MILLISECONDS = 7500; /* 7.5 seconds */
     private static long sampleExpirationMilliseconds = DEFAULT_SAMPLE_EXPIRATION_MILLISECONDS;
-    public static final double DEFAULT_SAMPLE_QUANTILE = 0.5;
-    private static double sampleQuantile = DEFAULT_SAMPLE_QUANTILE;
-    public static final long DEFAULT_SAMPLE_RATE = 500; /* 0.5 seconds */
-    private static long sampleRateMilliseconds = DEFAULT_SAMPLE_RATE;
     private ArrayList<Measurement> mMeasurements = new ArrayList<Measurement>();
 
     @Override
@@ -36,36 +30,16 @@ public class RunningAverageRssiFilter implements RssiFilter {
 
     @Override
     public boolean noMeasurementsAvailable() {
+        refreshMeasurements();
         return mMeasurements.size() == 0;
     }
 
     @Override
     public double calculateRssi() {
         refreshMeasurements();
-
-        // fill missing samples
-        ArrayList<Measurement> calcMeasurements = new ArrayList<>(mMeasurements);
-        while (calcMeasurements.size() < sampleExpirationMilliseconds/sampleRateMilliseconds) {
-            Measurement m = new Measurement();
-            m.rssi = -110;
-            m.timestamp = System.currentTimeMillis();
-            calcMeasurements.add(m);
-        }
-        Collections.sort(mMeasurements);
-
-        int endIndex = (int) (sampleQuantile * sampleExpirationMilliseconds/sampleRateMilliseconds);
-        assert (endIndex > 0);
-        assert (endIndex <= sampleExpirationMilliseconds/sampleRateMilliseconds);
-
-        double sum = 0;
-        for (int i = 0; i < endIndex; i++) {
-            sum += calcMeasurements.get(i).rssi;
-        }
-        double runningAverage = sum/(endIndex-1);
-
-        LogManager.i(TAG, "Running average mRssi based on %s measurements with %s dummy measurements: %s, max : %s",
-                calcMeasurements.size(), calcMeasurements.size()-mMeasurements.size(), runningAverage, calcMeasurements.get(0).rssi);
-        return runningAverage;
+        if (mMeasurements.size() == 0) return -1;
+        LogManager.d(TAG, "Running max mRssi: %s", mMeasurements.get(0));
+        return (double) mMeasurements.get(0).rssi;
     }
 
     private synchronized void refreshMeasurements() {
@@ -93,14 +67,6 @@ public class RunningAverageRssiFilter implements RssiFilter {
 
     public static void setSampleExpirationMilliseconds(long newSampleExpirationMilliseconds) {
         sampleExpirationMilliseconds = newSampleExpirationMilliseconds;
-    }
-
-    public static void setSampleRateMilliseconds(long newSampleRateMilliseconds) {
-        sampleRateMilliseconds = newSampleRateMilliseconds;
-    }
-
-    public static void setSampleQuantile(double newSampleQuantile) {
-        sampleQuantile = newSampleQuantile;
     }
 
 }

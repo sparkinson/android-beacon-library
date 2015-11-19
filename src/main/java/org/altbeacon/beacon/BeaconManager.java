@@ -41,6 +41,7 @@ import org.altbeacon.beacon.service.BeaconService;
 import org.altbeacon.beacon.service.RangeState;
 import org.altbeacon.beacon.service.RangedBeacon;
 import org.altbeacon.beacon.service.RunningAverageRssiFilter;
+import org.altbeacon.beacon.service.RunningMaxRssiFilter;
 import org.altbeacon.beacon.service.StartRMData;
 import org.altbeacon.beacon.simulator.BeaconSimulator;
 
@@ -725,8 +726,40 @@ public class BeaconManager {
      * measurements
      * @param maxTrackingAge in milliseconds
      */
-    public void setMaxTrackingAge(int maxTrackingAge) {
+    public void setMaxTrackingAge(long maxTrackingAge) {
         RangedBeacon.setMaxTrackinAge(maxTrackingAge);
+    }
+
+    /**
+     * Set the period for new max measurement
+     * @param sampleExpirationMilliseconds in milliseconds
+     */
+    public void setRunningMaxSampleExpirationMilliseconds(int sampleExpirationMilliseconds) {
+        RunningMaxRssiFilter.setSampleExpirationMilliseconds(sampleExpirationMilliseconds);
+    }
+
+    /**
+     * Set the averaging period for new measurement
+     * @param sampleExpirationMilliseconds in milliseconds
+     */
+    public void setRunningAverageSampleExpirationMilliseconds(int sampleExpirationMilliseconds) {
+        RunningAverageRssiFilter.setSampleExpirationMilliseconds(sampleExpirationMilliseconds);
+    }
+
+    /**
+     * Set the expected sampling rate
+     * @param sampleRateMilliseconds in milliseconds
+     */
+    public void setSamplingRateMilliseconds(int sampleRateMilliseconds) {
+        RunningAverageRssiFilter.setSampleRateMilliseconds(sampleRateMilliseconds);
+    }
+
+    /**
+     * Set the sample quantile used in the running mean calculation
+     * @param sampleQuantile in milliseconds
+     */
+    public void setSampleQuantile(double sampleQuantile) {
+        RunningAverageRssiFilter.setSampleQuantile(sampleQuantile);
     }
 
     public static void setBeaconSimulator(BeaconSimulator beaconSimulator) {

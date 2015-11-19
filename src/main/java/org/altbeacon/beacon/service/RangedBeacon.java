@@ -11,13 +11,11 @@ public class RangedBeacon {
     private static final String TAG = "RangedBeacon";
     public static final long DEFAULT_MAX_TRACKING_AGE = 5000; /* 5 Seconds */
     public static long maxTrackingAge = DEFAULT_MAX_TRACKING_AGE; /* 5 Seconds */
-    //kept here for backward compatibility
-    public static final long DEFAULT_SAMPLE_EXPIRATION_MILLISECONDS = 20000; /* 20 seconds */
-    private static long sampleExpirationMilliseconds = DEFAULT_SAMPLE_EXPIRATION_MILLISECONDS;
     private boolean mTracked = true;
     protected long lastTrackedTimeMillis = 0;
     Beacon mBeacon;
     protected RssiFilter filter = null;
+    protected RssiFilter maxFilter = new RunningMaxRssiFilter();
 
     public RangedBeacon(Beacon beacon) {
         //set RSSI filter
@@ -28,7 +26,6 @@ public class RangedBeacon {
             LogManager.e(TAG, "Could not construct RssiFilterImplClass %s", BeaconManager.getRssiFilterImplClass().getName());
         }
 
-        RunningAverageRssiFilter.setSampleExpirationMilliseconds(sampleExpirationMilliseconds);
         updateBeacon(beacon);
     }
 
@@ -51,13 +48,27 @@ public class RangedBeacon {
 
     // Done at the end of each cycle before data are sent to the client
     public void commitMeasurements() {
+
+        // calculate average
         if (!filter.noMeasurementsAvailable()) {
             double runningAverage = filter.calculateRssi();
             mBeacon.setRunningAverageRssi(runningAverage);
-            LogManager.d(TAG, "calculated new runningAverageRssi: %s", runningAverage);
+            LogManager.i(TAG, "calculated new runningAverageRssi: %s", runningAverage);
         }
         else {
+            mBeacon.setRunningAverageRssi(null);
             LogManager.d(TAG, "No measurements available to calculate running average");
+        }
+
+        // calculate max
+        if (!maxFilter.noMeasurementsAvailable()) {
+            double runningMax = maxFilter.calculateRssi();
+            mBeacon.setRunningMaxRssi(runningMax);
+            LogManager.i(TAG, "calculated new runningMaxRssi: %s", runningMax);
+        }
+        else {
+            mBeacon.setRunningMaxRssi(null);
+            LogManager.d(TAG, "No measurements available to calculate running max");
         }
     }
 
@@ -68,15 +79,11 @@ public class RangedBeacon {
             mTracked = true;
             lastTrackedTimeMillis = System.currentTimeMillis();
             filter.addMeasurement(rssi);
+            maxFilter.addMeasurement(rssi);
         }
     }
 
-    //kept here for backward compatibility
-    public static void setSampleExpirationMilliseconds(long milliseconds) {
-        sampleExpirationMilliseconds = milliseconds;
-    }
-
-    public static void setMaxTrackinAge(int maxTrackinAge) {
+    public static void setMaxTrackinAge(long maxTrackinAge) {
         RangedBeacon.maxTrackingAge = maxTrackinAge;
     }
 

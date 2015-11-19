@@ -43,28 +43,32 @@ public class RunningAverageRssiFilter implements RssiFilter {
     public double calculateRssi() {
         refreshMeasurements();
 
+        int expected = (int) (sampleExpirationMilliseconds/sampleRateMilliseconds - 1);
+
         // fill missing samples
         ArrayList<Measurement> calcMeasurements = new ArrayList<>(mMeasurements);
-        while (calcMeasurements.size() < sampleExpirationMilliseconds/sampleRateMilliseconds) {
+        while (calcMeasurements.size() < expected) {
             Measurement m = new Measurement();
             m.rssi = -110;
             m.timestamp = System.currentTimeMillis();
             calcMeasurements.add(m);
         }
-        Collections.sort(mMeasurements);
+        Collections.sort(calcMeasurements);
 
-        int endIndex = (int) (sampleQuantile * sampleExpirationMilliseconds/sampleRateMilliseconds);
-        assert (endIndex > 0);
-        assert (endIndex <= sampleExpirationMilliseconds/sampleRateMilliseconds);
+        int startIndex = (int) (sampleQuantile * calcMeasurements.size());
+        assert (startIndex > 0);
+        assert (startIndex < calcMeasurements.size());
 
         double sum = 0;
-        for (int i = 0; i < endIndex; i++) {
+        int n = 0;
+        for (int i = startIndex; i < calcMeasurements.size(); i++) {
             sum += calcMeasurements.get(i).rssi;
+            n++;
         }
-        double runningAverage = sum/(endIndex-1);
+        double runningAverage = sum/n;
 
         LogManager.i(TAG, "Running average mRssi based on %s measurements with %s dummy measurements: %s, max : %s",
-                calcMeasurements.size(), calcMeasurements.size()-mMeasurements.size(), runningAverage, calcMeasurements.get(0).rssi);
+                calcMeasurements.size(), calcMeasurements.size()-mMeasurements.size(), runningAverage, calcMeasurements.get(calcMeasurements.size()-1).rssi);
         return runningAverage;
     }
 

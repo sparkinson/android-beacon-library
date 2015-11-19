@@ -58,7 +58,7 @@ public class CurveFittedDistanceCalculator implements DistanceCalculator {
         else {
             distance =  (mCoefficient1)*Math.pow(ratio,mCoefficient2) + mCoefficient3;
         }
-        LogManager.d(TAG, "avg mRssi: %s distance: %s", rssi, distance);
+        LogManager.i(TAG, "avg mRssi: %s, ratio: %s, distance: %s", rssi, ratio, distance);
         return distance;
     }
 }

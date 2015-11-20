@@ -389,14 +389,12 @@ public class Beacon implements Parcelable {
 
 
     /**
-     * Provides a calculated estimate of the distance to the beacon based on a running average of
-     * the RSSI and the transmitted power calibration value included in the beacon advertisement.
-     * This value is specific to the type of Android device receiving the transmission.
+     * Provides a calculated estimate of the distance to the beacon based on a environment setting.
      *
      * @see #mDistance
      * @return distance
      */
-    public double getDistance() {
+    public double getBestDistance() {
         if (mDistance == null) {
             mDistance = calculateDistance(mTxPower, getBestAverageRssiAvailable());
             if (mRunningMaxRssi != null) {
@@ -409,6 +407,17 @@ public class Beacon implements Parcelable {
             }
         }
         return mDistance;
+    }
+
+    /**
+     * Provides a calculated estimate of the distance to the beacon based on current RSSI
+     * and the transmitted power calibration value included in the beacon advertisement.
+     * This value is specific to the type of Android device receiving the transmission.
+     *
+     * @return distance
+     */
+    public double getSimpleDistance() {
+        return calculateDistance(mTxPower, mRssi);
     }
 
     public double getBestAverageRssiAvailable() {
@@ -540,7 +549,7 @@ public class Beacon implements Parcelable {
         for (Identifier identifier: mIdentifiers) {
             out.writeString(identifier == null ? null : identifier.toString());
         }
-        out.writeDouble(getDistance());
+        out.writeDouble(getBestDistance());
         out.writeInt(mRssi);
         out.writeInt(mTxPower);
         out.writeString(mBluetoothAddress);
@@ -574,7 +583,7 @@ public class Beacon implements Parcelable {
         }
         map.put("identifiers", identifiers);
 
-        map.put("distance", getDistance());
+        map.put("distance", getBestDistance());
         map.put("rssi", getRssi());
         map.put("best_rssi", getBestAverageRssiAvailable());
         if (mRunningMaxRssi != null)

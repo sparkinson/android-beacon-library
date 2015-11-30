@@ -401,7 +401,7 @@ public class Beacon implements Parcelable {
                 // we set the current rssi to be the short term max minus a longer term mean
                 // we are looking for short term changes
                 double mRunningMaxDistance = calculateDistance(mTxPower, mRunningMaxRssi);
-                double mRunningAverageDistance = Math.min(1.5, Math.max(0.0, mDistance));
+                double mRunningAverageDistance = Math.min(2.0, Math.max(0.0, mDistance));
                 mDistance = mRunningMaxDistance - mRunningAverageDistance;
                 LogManager.i(TAG, "calculated new distance: %s %s %s", mDistance, mRunningMaxDistance, mRunningAverageDistance);
             }

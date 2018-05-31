@@ -25,6 +25,7 @@ package org.altbeacon.beacon;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Log;
 
 import org.altbeacon.beacon.client.BeaconDataFactory;
 import org.altbeacon.beacon.client.NullBeaconDataFactory;
@@ -428,6 +429,7 @@ public class Beacon implements Parcelable {
         else {
             LogManager.d(TAG, "Not using running average RSSI because it is null");
         }
+//        Log.e(TAG, String.valueOf(getId1()));
         return bestRssiAvailable;
     }
 

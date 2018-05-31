@@ -15,15 +15,14 @@ import java.util.Iterator;
 public class RunningAverageRssiFilter implements RssiFilter {
 
     private static final String TAG = "RunningAverageRssiFilter";
-    public static final long DEFAULT_MAX_TRACKING_AGE = 5000; /* 5 Seconds */
-    public static long maxTrackingAge = DEFAULT_MAX_TRACKING_AGE; /* 5 Seconds */
     public static final long DEFAULT_SAMPLE_EXPIRATION_MILLISECONDS = 20000; /* 20 seconds */
     private static long sampleExpirationMilliseconds = DEFAULT_SAMPLE_EXPIRATION_MILLISECONDS;
     public static final double DEFAULT_SAMPLE_QUANTILE = 0.5;
     private static double sampleQuantile = DEFAULT_SAMPLE_QUANTILE;
-    public static final long DEFAULT_SAMPLE_RATE = 500; /* 0.5 seconds */
+    public static final long DEFAULT_SAMPLE_RATE = 400; /* 0.5 seconds */
     private static long sampleRateMilliseconds = DEFAULT_SAMPLE_RATE;
     private ArrayList<Measurement> mMeasurements = new ArrayList<Measurement>();
+    private static Date firstMeasurement;
 
     @Override
     public void addMeasurement(Integer rssi) {
@@ -43,7 +42,8 @@ public class RunningAverageRssiFilter implements RssiFilter {
     public double calculateRssi() {
         refreshMeasurements();
 
-        int expected = (int) (sampleExpirationMilliseconds/sampleRateMilliseconds - 1);
+        long sampleTime = Math.min(new Date().getTime() - firstMeasurement.getTime(), sampleExpirationMilliseconds);
+        int expected = (int) (sampleTime/sampleRateMilliseconds - 1);
 
         // fill missing samples
         ArrayList<Measurement> calcMeasurements = new ArrayList<>(mMeasurements);
@@ -74,6 +74,10 @@ public class RunningAverageRssiFilter implements RssiFilter {
 
     private synchronized void refreshMeasurements() {
         Date now = new Date();
+        if (firstMeasurement == null) {
+            firstMeasurement = now;
+        }
+
         ArrayList<Measurement> newMeasurements = new ArrayList<Measurement>();
         Iterator<Measurement> iterator = mMeasurements.iterator();
         while (iterator.hasNext()) {
